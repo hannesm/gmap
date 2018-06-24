@@ -26,7 +26,7 @@ module type S = sig
   val mem : 'a key -> t -> bool
   val find : 'a key -> t -> 'a option
   val get : 'a key -> t -> 'a
-  val add_unbound : 'a key -> 'a -> t -> t option
+  val add_unless_bound : 'a key -> 'a -> t -> t option
   val add : 'a key -> 'a -> t -> t
   val remove : 'a key -> t -> t
   val update : 'a key -> ('a option -> 'a option) -> t -> t
@@ -40,7 +40,7 @@ module type S = sig
   val findb : 'a key -> t -> b option
   val getb : 'a key -> t -> b
 
-  val addb_unbound : b -> t -> t option
+  val addb_unless_bound : b -> t -> t option
   val addb : b -> t -> t
 
   val equal : (b -> b -> bool) -> t -> t -> bool
@@ -79,9 +79,9 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   let add k v m = M.add (K k) (B (k, v)) m
   let addb (B (k, v)) m = add k v m
 
-  let add_unbound k v m = if mem k m then None else Some (add k v m)
+  let add_unless_bound k v m = if mem k m then None else Some (add k v m)
 
-  let addb_unbound (B (k, v)) m = add_unbound k v m
+  let addb_unless_bound (B (k, v)) m = add_unless_bound k v m
 
   let remove k m = M.remove (K k) m
 

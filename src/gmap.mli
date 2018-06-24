@@ -22,8 +22,8 @@
     their value type.  The underlying storage mechanism uses OCaml's stdlib
     {{:http://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.html}Map} type:
     Lookup takes [O(log n)] time.  The above mentioned uniqueness invariant can
-    be verified by only using {!S.update} or {!S.add_unbound} (respectively
-    {!S.addb_unbound} for insertion).
+    be verified by only using {!S.update} or {!S.add_unless_bound} (respectively
+    {!S.addb_unless_bound} for insertion).
 
     A simple example:
 
@@ -133,8 +133,8 @@ module type S = sig
 
   (** {2 Insertion and removal operations} *)
 
-  val add_unbound : 'a key -> 'a -> t -> t option
-  (** [add_unbound key value m] returns [Some m'], a map containing the
+  val add_unless_bound : 'a key -> 'a -> t -> t option
+  (** [add_unless_bound key value m] returns [Some m'], a map containing the
       same bindings as [m], plus a binding of [key] to [value].  Or, [None] if
       [key] was already bound in [m]. *)
 
@@ -187,7 +187,7 @@ module type S = sig
 
   (** {2 Insertion} *)
 
-  val addb_unbound : b -> t -> t option
+  val addb_unless_bound : b -> t -> t option
   (** [addb_unless_bound b m] returns [Some m'], a map containing the
       same bindings as [m], plus the binding [b].  Or, [None] if
       [key], the first part of [b], was already bound in [m]. *)
