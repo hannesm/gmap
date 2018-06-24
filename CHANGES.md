@@ -1,4 +1,4 @@
-## master
+## 0.2.0 (2018-06-24)
 
 * New function `update`.
 * New function `add_unless_bound` and `addb_unless_bound`.
