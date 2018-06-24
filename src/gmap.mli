@@ -20,8 +20,10 @@
     In gmap, {{:https://en.wikipedia.org/wiki/Generalized_algebraic_data_type}GADTs}
     are used to provide key-dependent value types: each GADT constructor carries
     their value type.  The underlying storage mechanism uses OCaml's stdlib
-    [Map] type:  Lookup takes [O(log n)] time.  The above mentioned uniqueness
-    invariant can be verified by using {!update} or {!add_unbound} for insertion.
+    {{:http://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.html}Map} type:
+    Lookup takes [O(log n)] time.  The above mentioned uniqueness invariant can
+    be verified by only using {!S.update} or {!S.add_unbound} (respectively
+    {!S.addb_unbound} for insertion).
 
     A simple example:
 
