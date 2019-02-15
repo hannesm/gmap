@@ -1,7 +1,0 @@
-description = "gmap - a GADT map"
-version = "%%VERSION_NUM%%"
-requires = "fmt"
-archive(byte) = "gmap.cma"
-archive(native) = "gmap.cmxa"
-plugin(byte) = "gmap.cma"
-plugin(native) = "gmap.cmxs"

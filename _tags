@@ -1,3 +1,0 @@
-true : color(always), bin_annot, safe_string, principal
-true : warn(+A-4-58)
-true : package(fmt)
