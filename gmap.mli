@@ -63,8 +63,6 @@ match GM.find A m with
 (** Ordering. *)
 module Order : sig
 
-  (** {1:order Ordering} *)
-
   (** The ordering type embedding type equality for [Eq]. *)
   type (_,_) t =
     | Lt : ('a, 'b) t
@@ -74,8 +72,6 @@ end
 
 (** Key. *)
 module type KEY = sig
-
-  (** {1:key Key} *)
 
   type _ t
   (** The type of a key *)
@@ -90,17 +86,13 @@ end
 (** Output signature of the functor {!Make} *)
 module type S = sig
 
-  (** {1:skey Key} *)
-
   type 'a key
   (** The type for map keys whose lookup value is ['a]. *)
-
-  (** {1:map Map} *)
 
   type t
   (** The type of maps from type ['a key] to ['a]. *)
 
-  (** {2 Constructors} *)
+  (** {3 Constructors} *)
 
   val empty : t
   (** [empty] is the empty map. *)
@@ -109,7 +101,7 @@ module type S = sig
   (** [singleton key value] creates a one-element map that contains a binding
       [value] for [key]. *)
 
-  (** {2 Basic operations} *)
+  (** {3 Basic operations} *)
 
   val is_empty : t -> bool
   (** [is_empty m] returns [true] if the map [m] is empty, [false] otherwise. *)
@@ -117,7 +109,7 @@ module type S = sig
   val cardinal : t -> int
   (** [cardinal m] returns the number of bindings of the map [m]. *)
 
-  (** {2 Lookup operations} *)
+  (** {3 Lookup operations} *)
 
   val mem : 'a key -> t -> bool
   (** [mem key m] returns [true] if the map [m] contains a binding for [key]. *)
@@ -131,7 +123,7 @@ module type S = sig
 
       @raise Not_found if [m] does not contain a binding for [key]. *)
 
-  (** {2 Insertion and removal operations} *)
+  (** {3 Insertion and removal operations} *)
 
   val add_unless_bound : 'a key -> 'a -> t -> t option
   (** [add_unless_bound key value m] returns [Some m'], a map containing the
@@ -153,12 +145,12 @@ module type S = sig
       for the binding [v] of [k].  Depending the value of [v], which is
       [f (find k m)], the binding of [k] is added, removed, or updated. *)
 
-  (** {1 Bindings} *)
+  (** {2 Bindings} *)
 
   type b = B : 'a key * 'a -> b
   (** The type for a binding: a pair containing a key and its value. *)
 
-  (** {2 Selection} *)
+  (** {3 Selection} *)
 
   val min_binding : t -> b option
   (** [min_binding m] is the minimal binding in [m], [None] if [m] is empty. *)
@@ -173,7 +165,7 @@ module type S = sig
   (** [bindings m] returns the list of all bindings in the given map [m].  The
       list is sorted with respect to the ordering over the type of the keys. *)
 
-  (** {2 Lookup} *)
+  (** {3 Lookup} *)
 
   val findb : 'a key -> t -> b option
   (** [findb key m] returns [Some b] if the binding of [key] in [m] is [b], or
@@ -185,7 +177,7 @@ module type S = sig
       @raise Not_found if [m] does not contain a binding for [key]. *)
 
 
-  (** {2 Insertion} *)
+  (** {3 Insertion} *)
 
   val addb_unless_bound : b -> t -> t option
   (** [addb_unless_bound b m] returns [Some m'], a map containing the
@@ -197,14 +189,14 @@ module type S = sig
       binding [b].  If [key], the first part of [b] was already bound in [m],
       the previous binding disappears. *)
 
-  (** {2 Equality} *)
+  (** {3 Equality} *)
 
   val equal : (b -> b -> bool) -> t -> t -> bool
   (** [equal p m m'] tests whether the maps [m] and [m'] are equal, that is
       contain equal keys and associate them with equal data.  [p] is the
       equality predicate used to compare the data associated with the keys. *)
 
-  (** {2 Higher-order functions} *)
+  (** {3 Higher-order functions} *)
 
   val iter : (b -> unit) -> t -> unit
   (** [iter f m] applies [f] to all bindings in [m].  The bindings are passed in
@@ -236,7 +228,7 @@ module type S = sig
       and [m'].  When the same binding is defined in both maps, the function [f]
       is used to combine them. *)
 
-  (** {2 Pretty printer} *)
+  (** {3 Pretty printer} *)
 
   val pp : Format.formatter -> t -> unit
   (** [pp fmt m] is a pretty printer of the map [m]. *)
