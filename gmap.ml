@@ -12,7 +12,6 @@ end
 module type KEY = sig
   type _ t
   val compare : 'a t -> 'b t -> ('a, 'b) Order.t
-  val pp : Format.formatter -> 'a t -> 'a -> unit
 end
 
 module type S = sig
@@ -60,7 +59,6 @@ module type S = sig
   val filter : (b -> bool) -> t -> t
   val merge : (b option -> b option -> b option) -> t -> t -> t
   val union : (b -> b -> b option) -> t -> t -> t
-  val pp : Format.formatter -> t -> unit
 end
 
 module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
@@ -142,12 +140,6 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   let merge f m m' = M.merge (fun _ b b' -> f b b') m m'
 
   let union f m m' = M.union (fun _ b b' -> f b b') m m'
-
-  let pp ppf m =
-    let pp ppf = function
-      | B (k, v) -> Key.pp ppf k v
-    in
-    Fmt.(list ~sep:(unit "@.") pp) ppf (bindings m)
 
   let equal cmp m m' = M.equal cmp m m'
 end

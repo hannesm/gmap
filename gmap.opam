@@ -8,7 +8,6 @@ bug-reports: "https://github.com/hannesm/gmap/issues"
 depends: [
   "ocaml" {>= "4.04.2"}
   "dune" {build}
-  "fmt"
 ]
 build: [
   ["dune" "subst"] {pinned}

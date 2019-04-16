@@ -78,9 +78,6 @@ module type KEY = sig
 
   val compare : 'a t -> 'b t -> ('a, 'b) Order.t
   (** [compare k k'] is the total order of keys. *)
-
-  val pp : Format.formatter -> 'a t -> 'a -> unit
-  (** [pp k] is the pretty-printer. *)
 end
 
 (** Output signature of the functor {!Make} *)
@@ -252,11 +249,6 @@ module type S = sig
   (** [union f m m'] computes a map whose keys is the union of the keys of [m]
       and [m'].  When the same binding is defined in both maps, the function [f]
       is used to combine them. *)
-
-  (** {2 Pretty printer} *)
-
-  val pp : Format.formatter -> t -> unit
-  (** [pp fmt m] is a pretty printer of the map [m]. *)
 end
 
 (** Functor for heterogenous maps whose keys are provided by [Key]. *)

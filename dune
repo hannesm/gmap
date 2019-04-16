@@ -1,5 +1,4 @@
 (library
   (name gmap)
   (public_name gmap)
-  (modules gmap)
-  (libraries fmt))
+  (modules gmap))
