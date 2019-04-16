@@ -31,7 +31,15 @@ module type S = sig
   val remove : 'a key -> t -> t
   val update : 'a key -> ('a option -> 'a option) -> t -> t
 
+  type k = K : 'a key -> k
   type b = B : 'a key * 'a -> b
+
+  val comparek : k -> k -> int
+  val memk : k -> t -> bool
+  val getk : k -> t -> b
+  val findk : k -> t -> b option
+  val removek : k -> t -> t
+
   val min_binding : t -> b option
   val max_binding : t -> b option
   val any_binding :  t -> b option
@@ -60,12 +68,12 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   type k = K : 'a key -> k
   type b = B : 'a key * 'a -> b
 
+  let comparek (K a) (K b) = match Key.compare a b with
+    | Order.Lt -> -1 | Order.Eq -> 0 | Order.Gt -> 1
+
   module M = Map.Make(struct
       type t = k
-      let compare (K a) (K b) = match Key.compare a b with
-        | Order.Lt -> -1
-        | Order.Eq -> 0
-        | Order.Gt -> 1
+      let compare = comparek
     end)
 
   type t = b M.t
@@ -75,6 +83,7 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
 
   let is_empty = M.is_empty
   let mem k m = M.mem (K k) m
+  let memk k m = M.mem k m
 
   let add k v m = M.add (K k) (B (k, v)) m
   let addb (B (k, v)) m = add k v m
@@ -84,13 +93,16 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   let addb_unless_bound (B (k, v)) m = add_unless_bound k v m
 
   let remove k m = M.remove (K k) m
+  let removek k m = M.remove k m
 
-  let getb : type a. a key -> t -> b = fun k m ->
+  let getk (K k) m =
     match M.find (K k) m with
     | B (k', v) ->
       match Key.compare k k' with
       | Order.Eq -> B (k, v)
       | _ -> assert false
+
+  let getb : type a. a key -> t -> b = fun k m -> getk (K k) m
 
   let get : type a. a key -> t -> a = fun k m ->
     match M.find (K k) m with
@@ -104,6 +116,8 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
 
   let find : type a. a key -> t -> a option = fun k m ->
     try Some (get k m) with Not_found -> None
+
+  let findk k m = try Some (getk k m) with Not_found -> None
 
   let update k f m =
     match f (find k m) with

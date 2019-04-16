@@ -145,12 +145,37 @@ module type S = sig
       for the binding [v] of [k].  Depending the value of [v], which is
       [f (find k m)], the binding of [k] is added, removed, or updated. *)
 
-  (** {2 Bindings} *)
+
+  (** {2 Keys and Bindings} *)
+
+  type k = K : 'a key -> k
+  (** The monomorphic type of a key. *)
 
   type b = B : 'a key * 'a -> b
   (** The type for a binding: a pair containing a key and its value. *)
 
-  (** {2 Selection} *)
+  (** {2 Key operations} *)
+
+  val comparek : k -> k -> int
+  (** [compare k k'] compares [k] with [k'], using the ordering. *)
+
+  val memk : k -> t -> bool
+  (** [memk key m] returns [true] if the map [m] contains a binding for [key]. *)
+
+  val getk : k -> t -> b
+  (** [k key m] returns [Some v] if the binding of [key] in [m] is [v], or
+      [None] if [key] is not bound [m]. *)
+
+  val findk : k -> t -> b option
+  (** [findk key m] returns [Some v] if the binding of [key] in [m] is [v], or
+      [None] if [key] is not bound [m]. *)
+
+  val removek : k -> t -> t
+  (** [removek key m] returns a map containing the same bindings as [m], except
+      for [key] which is not bound in the returned map.  If [key] was not bound
+      in [m], [m] is returned unchanged. *)
+
+  (** {2 Selection of bindings} *)
 
   val min_binding : t -> b option
   (** [min_binding m] is the minimal binding in [m], [None] if [m] is empty. *)
@@ -165,7 +190,7 @@ module type S = sig
   (** [bindings m] returns the list of all bindings in the given map [m].  The
       list is sorted with respect to the ordering over the type of the keys. *)
 
-  (** {2 Lookup} *)
+  (** {2 Lookup of bindings} *)
 
   val findb : 'a key -> t -> b option
   (** [findb key m] returns [Some b] if the binding of [key] in [m] is [b], or
@@ -177,7 +202,7 @@ module type S = sig
       @raise Not_found if [m] does not contain a binding for [key]. *)
 
 
-  (** {2 Insertion} *)
+  (** {2 Insertion of bindings} *)
 
   val addb_unless_bound : b -> t -> t option
   (** [addb_unless_bound b m] returns [Some m'], a map containing the
