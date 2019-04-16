@@ -15,36 +15,33 @@
     combinations and storing these in an association list while parsing, but
     verifying the uniqueness invariant takes quadratic ([O(n^2)]) time, and
     retrieving a specific option is only doable in linear [O(n)] time.
-    Additionally, variant packing/unpacking is required.
+    Additionally, packing and unpacking is required with the variant type
+    solution.
 
     In gmap, {{:https://en.wikipedia.org/wiki/Generalized_algebraic_data_type}GADTs}
     are used to provide key-dependent value types: each GADT constructor carries
     their value type.  The underlying storage mechanism uses OCaml's stdlib
     {{:http://caml.inria.fr/pub/docs/manual-ocaml/libref/Map.html}Map} type:
     Lookup takes [O(log n)] time.  The above mentioned uniqueness invariant can
-    be verified by only using {!S.update} or {!S.add_unless_bound} (respectively
-    {!S.addb_unless_bound} for insertion).
+    be preserved while constructing the gmap if for insertion into the map only
+    {!S.update} and {!S.add_unless_bound} are used ({!S.add} replaces the
+    existing binding if present).
 
-    A simple example:
+    A small example:
 
 {[
-type _ k =
-  | A : int k
-  | B : string k
+type _ key =
+  | I : int key
+  | S : string key
 
 module K = struct
-  type 'a t = 'a k
+  type 'a t = 'a key
 
   let compare : type a b. a t -> b t -> (a, b) Gmap.Order.t = fun t t' ->
     let open Gmap.Order in
     match t, t' with
-    | A, A -> Eq | A, _ -> Lt | _, A -> Gt
-    | B, B -> Eq
-
-  let pp : type a. Format.formatter -> a t -> a -> unit = fun ppf t v ->
-    match t, v with
-    | A, x -> Fmt.pf ppf "A %d" x
-    | B, s -> Fmt.pf ppf "B %s" s
+    | I, I -> Eq | I, _ -> Lt | _, I -> Gt
+    | S, S -> Eq
 end
 
 module GM = Gmap.Make(K)
@@ -53,7 +50,7 @@ module GM = Gmap.Make(K)
     Using [GM] is done as follows:
 
 {[
-match GM.find A m with
+match GM.find I (GM.singleton I 10) with
 | Some x -> x * x
 | None -> 0
 ]}
@@ -78,9 +75,6 @@ module type KEY = sig
 
   val compare : 'a t -> 'b t -> ('a, 'b) Order.t
   (** [compare k k'] is the total order of keys. *)
-
-  val pp : Format.formatter -> 'a t -> 'a -> unit
-  (** [pp k] is the pretty-printer. *)
 end
 
 (** Output signature of the functor {!Make} *)
@@ -150,7 +144,7 @@ module type S = sig
   type b = B : 'a key * 'a -> b
   (** The type for a binding: a pair containing a key and its value. *)
 
-  (** {2 Selection} *)
+  (** {2 Selection of bindings} *)
 
   val min_binding : t -> b option
   (** [min_binding m] is the minimal binding in [m], [None] if [m] is empty. *)
@@ -165,38 +159,26 @@ module type S = sig
   (** [bindings m] returns the list of all bindings in the given map [m].  The
       list is sorted with respect to the ordering over the type of the keys. *)
 
-  (** {2 Lookup} *)
+  (** {2 Higher-order functions} *)
 
-  val findb : 'a key -> t -> b option
-  (** [findb key m] returns [Some b] if the binding of [key] in [m] is [b], or
-      [None] if [key] is not bound in [t]. *)
+  type eq = { f : 'a . 'a key -> 'a -> 'a -> bool }
+  (** The function type for the equal operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
 
-  val getb : 'a key -> t -> b
-  (** [getb key m] returns [v] if the binding of [key] in [m] is [b].
-
-      @raise Not_found if [m] does not contain a binding for [key]. *)
-
-
-  (** {2 Insertion} *)
-
-  val addb_unless_bound : b -> t -> t option
-  (** [addb_unless_bound b m] returns [Some m'], a map containing the
-      same bindings as [m], plus the binding [b].  Or, [None] if
-      [key], the first part of [b], was already bound in [m]. *)
-
-  val addb : b -> t -> t
-  (** [addb b m] returns a map containing the same bindings as [m], plus the
-      binding [b].  If [key], the first part of [b] was already bound in [m],
-      the previous binding disappears. *)
-
-  (** {2 Equality} *)
-
-  val equal : (b -> b -> bool) -> t -> t -> bool
+  val equal : eq -> t -> t -> bool
   (** [equal p m m'] tests whether the maps [m] and [m'] are equal, that is
       contain equal keys and associate them with equal data.  [p] is the
       equality predicate used to compare the data associated with the keys. *)
 
-  (** {2 Higher-order functions} *)
+  type mapper = { f : 'a. 'a key -> 'a -> 'a }
+  (** The function type for the map operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
+
+  val map : mapper -> t -> t
+  (** [map f m] returns a map with the same domain as [m], where the associated
+      binding [b] has been replaced by the result of the application of [f] to
+      [b]. The bindings are passed to [f] in increasing order with respect to
+      the ordering over the type of the keys. *)
 
   val iter : (b -> unit) -> t -> unit
   (** [iter f m] applies [f] to all bindings in [m].  The bindings are passed in
@@ -204,7 +186,8 @@ module type S = sig
 
   val fold : (b -> 'a -> 'a) -> t -> 'a -> 'a
   (** [fold f m acc] computes [(f bN .. (f b1 acc))], where [b1 .. bN] are the
-      bindings of [m] in increasing order over the type of keys. *)
+      bindings of [m] in increasing order with respect to the ordering over the
+      type of the keys. *)
 
   val for_all : (b -> bool) -> t -> bool
   (** [for_all p m] checks if all bindings of the map [m] satisfy the predicate
@@ -218,21 +201,26 @@ module type S = sig
   (** [filter p m] returns the map with all the bindings in [m] that satisfy
       [p]. *)
 
-  val merge : (b option -> b option -> b option) -> t -> t -> t
+  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
+  (** The function type for the merge operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
+
+  val merge : merger -> t -> t -> t
   (** [merge f m m'] computes a map whose keys is a subset of keys of [m] and
       [m'].  The presence of each such binding, and the corresponding value, is
       determined with the function [f]. *)
 
-  val union : (b -> b -> b option) -> t -> t -> t
+  type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
+  (** The function type for the union operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
+
+  val union : unionee -> t -> t -> t
   (** [union f m m'] computes a map whose keys is the union of the keys of [m]
       and [m'].  When the same binding is defined in both maps, the function [f]
       is used to combine them. *)
-
-  (** {2 Pretty printer} *)
-
-  val pp : Format.formatter -> t -> unit
-  (** [pp fmt m] is a pretty printer of the map [m]. *)
 end
 
 (** Functor for heterogenous maps whose keys are provided by [Key]. *)
-module Make : functor (Key : KEY) -> S with type 'a key = 'a Key.t
+module Make (Key : KEY) : sig
+  include S with type 'a key = 'a Key.t
+end
