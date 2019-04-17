@@ -28,23 +28,18 @@
     A simple example:
 
 {[
-type _ k =
-  | A : int k
-  | B : string k
+type _ key =
+  | A : int key
+  | B : string key
 
 module K = struct
-  type 'a t = 'a k
+  type 'a t = 'a key
 
   let compare : type a b. a t -> b t -> (a, b) Gmap.Order.t = fun t t' ->
     let open Gmap.Order in
     match t, t' with
     | A, A -> Eq | A, _ -> Lt | _, A -> Gt
     | B, B -> Eq
-
-  let pp : type a. Format.formatter -> a t -> a -> unit = fun ppf t v ->
-    match t, v with
-    | A, x -> Fmt.pf ppf "A %d" x
-    | B, s -> Fmt.pf ppf "B %s" s
 end
 
 module GM = Gmap.Make(K)
