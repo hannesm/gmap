@@ -151,22 +151,6 @@ module type S = sig
   val comparek : k -> k -> int
   (** [compare k k'] compares [k] with [k'], using the ordering. *)
 
-  val memk : k -> t -> bool
-  (** [memk key m] returns [true] if the map [m] contains a binding for [key]. *)
-
-  val getk : k -> t -> b
-  (** [k key m] returns [Some v] if the binding of [key] in [m] is [v], or
-      [None] if [key] is not bound [m]. *)
-
-  val findk : k -> t -> b option
-  (** [findk key m] returns [Some v] if the binding of [key] in [m] is [v], or
-      [None] if [key] is not bound [m]. *)
-
-  val removek : k -> t -> t
-  (** [removek key m] returns a map containing the same bindings as [m], except
-      for [key] which is not bound in the returned map.  If [key] was not bound
-      in [m], [m] is returned unchanged. *)
-
   (** {2 Selection of bindings} *)
 
   val min_binding : t -> b option
@@ -187,11 +171,6 @@ module type S = sig
   val findb : 'a key -> t -> b option
   (** [findb key m] returns [Some b] if the binding of [key] in [m] is [b], or
       [None] if [key] is not bound in [t]. *)
-
-  val getb : 'a key -> t -> b
-  (** [getb key m] returns [v] if the binding of [key] in [m] is [b].
-
-      @raise Not_found if [m] does not contain a binding for [key]. *)
 
 
   (** {2 Insertion of bindings} *)
@@ -215,13 +194,24 @@ module type S = sig
 
   (** {2 Higher-order functions} *)
 
+  type mapper = { f : 'a. 'a key -> 'a -> 'a }
+  (** The function type for the map operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
+
+  val map : mapper -> t -> t
+  (** [map f m] returns a map with the same domain as [m], where the associated
+      binding [b] has been replaced by the result of the application of [f] to
+      [b]. The bindings are passed to [f] in increasing order with respect to
+      the ordering over the type of the keys. *)
+
   val iter : (b -> unit) -> t -> unit
   (** [iter f m] applies [f] to all bindings in [m].  The bindings are passed in
       increasing order with respect to the ordering over the type of keys. *)
 
   val fold : (b -> 'a -> 'a) -> t -> 'a -> 'a
   (** [fold f m acc] computes [(f bN .. (f b1 acc))], where [b1 .. bN] are the
-      bindings of [m] in increasing order over the type of keys. *)
+      bindings of [m] in increasing order with respect to the ordering over the
+      type of the keys. *)
 
   val for_all : (b -> bool) -> t -> bool
   (** [for_all p m] checks if all bindings of the map [m] satisfy the predicate
@@ -235,12 +225,20 @@ module type S = sig
   (** [filter p m] returns the map with all the bindings in [m] that satisfy
       [p]. *)
 
-  val merge : (b option -> b option -> b option) -> t -> t -> t
+  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
+  (** The function type for the merge operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
+
+  val merge : merger -> t -> t -> t
   (** [merge f m m'] computes a map whose keys is a subset of keys of [m] and
       [m'].  The presence of each such binding, and the corresponding value, is
       determined with the function [f]. *)
 
-  val union : (b -> b -> b option) -> t -> t -> t
+  type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
+  (** The function type for the union operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
+
+  val union : unionee -> t -> t -> t
   (** [union f m m'] computes a map whose keys is the union of the keys of [m]
       and [m'].  When the same binding is defined in both maps, the function [f]
       is used to combine them. *)
