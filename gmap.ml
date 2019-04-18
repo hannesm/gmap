@@ -87,6 +87,15 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   let get : type a. a key -> t -> a = fun k m ->
     match M.find (K k) m with
     | B (k', v) ->
+      (* TODO this compare (and further below similar ones) is only needed for
+         the type checker (to get the k = k' proof), because the invariant
+         foreach k . t [K k] = B (k', v) -> k = k' is preserved by this library
+
+         it could be replaced by:
+          - Obj.magic
+          - vendor and slight modification of Stdlib.Map
+          - using integers as key -> compare can be a single instruction
+         Stay better safe than sorry (at least for now) *)
       match Key.compare k k' with
       | Order.Eq -> v
       | _ -> assert false
@@ -121,36 +130,44 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
     M.merge (fun (K k) b b' ->
         match b, b' with
         | None, None ->
-          (match f.f k None None with
-           | None -> None
-           | Some v -> Some (B (k, v)))
+          begin match f.f k None None with
+            | None -> None
+            | Some v -> Some (B (k, v))
+          end
         | None, Some (B (k', v)) ->
-          (match Key.compare k k' with
-           | Order.Eq ->
-             (match f.f k None (Some v) with
-              | None -> None
-              | Some v -> Some (B (k, v)))
-           | _ -> assert false)
+          (* see above comment about compare *)
+          begin match Key.compare k k' with
+            | Order.Eq ->
+              (match f.f k None (Some v) with
+               | None -> None
+               | Some v -> Some (B (k, v)))
+            | _ -> assert false
+          end
         | Some (B (k', v)), None ->
-          (match Key.compare k k' with
-           | Order.Eq ->
-             (match f.f k (Some v) None with
-              | None -> None
-              | Some v -> Some (B (k, v)))
-           | _ -> assert false)
+          (* see above comment about compare *)
+          begin match Key.compare k k' with
+            | Order.Eq ->
+              (match f.f k (Some v) None with
+               | None -> None
+               | Some v -> Some (B (k, v)))
+            | _ -> assert false
+          end
         | Some (B (k', v)), Some (B (k'', v')) ->
-          (match Key.compare k k', Key.compare k k'' with
+          (* see above comment about compare *)
+          begin match Key.compare k k', Key.compare k k'' with
            | Order.Eq, Order.Eq ->
              (match f.f k (Some v) (Some v') with
               | None -> None
               | Some v -> Some (B (k, v)))
-           | _ -> assert false))
+           | _ -> assert false
+          end)
       m m'
 
   type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
   let union f m m' =
     M.union
       (fun (K k) (B (k', v)) (B (k'', v')) ->
+         (* see above comment about compare *)
          match Key.compare k k', Key.compare k k'' with
          | Order.Eq, Order.Eq ->
            (match f.f k v v' with None -> None | Some v'' -> Some (B (k, v'')))
@@ -159,7 +176,9 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
 
   type eq = { f : 'a . 'a key -> 'a -> 'a -> bool }
   let equal cmp m m' =
-    M.equal (fun (B (k, v)) (B (k', v')) -> match Key.compare k k' with
+    M.equal (fun (B (k, v)) (B (k', v')) ->
+        (* see above comment about compare *)
+        match Key.compare k k' with
         | Order.Eq -> cmp.f k v v'
         | _ -> assert false)
       m m'
