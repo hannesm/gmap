@@ -40,12 +40,8 @@ module type S = sig
   val any_binding :  t -> b option
   val bindings : t -> b list
 
-  val findb : 'a key -> t -> b option
-
-  val addb_unless_bound : b -> t -> t option
-  val addb : b -> t -> t
-
-  val equal : (b -> b -> bool) -> t -> t -> bool
+  type eq = { f : 'a . 'a key -> 'a -> 'a -> bool }
+  val equal : eq -> t -> t -> bool
 
   type mapper = { f : 'a. 'a key -> 'a -> 'a }
   val map : mapper -> t -> t
@@ -83,20 +79,10 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   let mem k m = M.mem (K k) m
 
   let add k v m = M.add (K k) (B (k, v)) m
-  let addb (B (k, v)) m = add k v m
 
   let add_unless_bound k v m = if mem k m then None else Some (add k v m)
 
-  let addb_unless_bound (B (k, v)) m = add_unless_bound k v m
-
   let remove k m = M.remove (K k) m
-
-  let getb : type a. a key -> t -> b = fun k m ->
-    match M.find (K k) m with
-    | B (k', v) ->
-      match Key.compare k k' with
-      | Order.Eq -> B (k, v)
-      | _ -> assert false
 
   let get : type a. a key -> t -> a = fun k m ->
     match M.find (K k) m with
@@ -105,9 +91,6 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
       | Order.Eq -> v
       | _ -> assert false
 
-  let findb : type a. a key -> t -> b option = fun k m ->
-    try Some (getb k m) with Not_found -> None
-
   let find : type a. a key -> t -> a option = fun k m ->
     try Some (get k m) with Not_found -> None
 
@@ -115,7 +98,6 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
     match f (find k m) with
     | None -> remove k m
     | Some v -> add k v m
-
 
   let any_binding m = try Some (snd (M.choose m)) with Not_found -> None
   let min_binding m = try Some (snd (M.min_binding m)) with Not_found -> None
@@ -175,5 +157,10 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
          | _ -> assert false)
       m m'
 
-  let equal cmp m m' = M.equal cmp m m'
+  type eq = { f : 'a . 'a key -> 'a -> 'a -> bool }
+  let equal cmp m m' =
+    M.equal (fun (B (k, v)) (B (k', v')) -> match Key.compare k k' with
+        | Order.Eq -> cmp.f k v v'
+        | _ -> assert false)
+      m m'
 end

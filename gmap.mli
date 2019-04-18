@@ -166,33 +166,16 @@ module type S = sig
   (** [bindings m] returns the list of all bindings in the given map [m].  The
       list is sorted with respect to the ordering over the type of the keys. *)
 
-  (** {2 Lookup of bindings} *)
+  (** {2 Higher-order functions} *)
 
-  val findb : 'a key -> t -> b option
-  (** [findb key m] returns [Some b] if the binding of [key] in [m] is [b], or
-      [None] if [key] is not bound in [t]. *)
+  type eq = { f : 'a . 'a key -> 'a -> 'a -> bool }
+  (** The function type for the equal operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
 
-
-  (** {2 Insertion of bindings} *)
-
-  val addb_unless_bound : b -> t -> t option
-  (** [addb_unless_bound b m] returns [Some m'], a map containing the
-      same bindings as [m], plus the binding [b].  Or, [None] if
-      [key], the first part of [b], was already bound in [m]. *)
-
-  val addb : b -> t -> t
-  (** [addb b m] returns a map containing the same bindings as [m], plus the
-      binding [b].  If [key], the first part of [b] was already bound in [m],
-      the previous binding disappears. *)
-
-  (** {2 Equality} *)
-
-  val equal : (b -> b -> bool) -> t -> t -> bool
+  val equal : eq -> t -> t -> bool
   (** [equal p m m'] tests whether the maps [m] and [m'] are equal, that is
       contain equal keys and associate them with equal data.  [p] is the
       equality predicate used to compare the data associated with the keys. *)
-
-  (** {2 Higher-order functions} *)
 
   type mapper = { f : 'a. 'a key -> 'a -> 'a }
   (** The function type for the map operation, using a record type for
