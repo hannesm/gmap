@@ -43,7 +43,8 @@ module type S = sig
   val addb_unless_bound : b -> t -> t option
   val addb : b -> t -> t
 
-  val equal : (b -> b -> bool) -> t -> t -> bool
+  type eq = { f: 'a. 'a key -> 'a -> 'a -> bool }
+  val equal : eq -> t -> t -> bool
 
   val iter : (b -> unit) -> t -> unit
   val fold : (b -> 'a -> 'a) -> t -> 'a -> 'a
@@ -135,5 +136,39 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
     in
     Fmt.(list ~sep:(unit "@.") pp) ppf (bindings m)
 
-  let equal cmp m m' = M.equal cmp m m'
+  type eq = { f : 'a . 'a key -> 'a -> 'a -> bool }
+  (* here's how to define one of these:
+     let eq = let f (type a) (k:a GM.key) (a:a) (b:a) =
+       match k,a,b with X, (), () -> true | Y, a, b -> (a=b) in GM.{ f } *)
+
+  let equal cmp m m' =
+    let is_depleted (s,default) f = match s () with
+      | Seq.Nil -> s, default
+      | Cons (v,next) -> next, f v in
+    (* fold over m, and simultaneously iterate over m' as a Seq.t,
+       considering each pair of [b]'s. The actual map keys are ignored;
+       they should be identical to the first item in the B tuple.
+       This prevents Key.compare being called twice, which we would end up doing
+       if we used Map.equal here because we need to prove (a,a) Order.t in order
+       to be allowed to call cmp.f k v v'. Or something like that.
+       This implementation short-circuits on [m'], but it will always do the
+       match on each element in [m], so that's not so great. Could cheat and use
+       M.exists, or could use two sequences. The latter might actually be
+       nicer than this thing.
+    *)
+    M.fold (fun (K _) (B (k,v)) -> function
+        | _, false as acc -> acc
+        | next, true ->
+          is_depleted (next,false)
+            (fun (K _ , (B (k',v'))) ->
+               match Key.compare k k' with
+               | Eq -> cmp.f k v v'
+               | Lt | Gt -> false)
+      ) m (M.to_seq m', true) |> function
+      (* fail if m is not the first slice of of m', or
+         if the [m'] sequence has diff length than [m]: *)
+    | _, false -> false
+    | next, true -> match next () with Seq.Nil -> true | _ -> false
+
+
 end

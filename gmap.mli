@@ -191,7 +191,8 @@ module type S = sig
 
   (** {2 Equality} *)
 
-  val equal : (b -> b -> bool) -> t -> t -> bool
+  type eq = { f: 'a. 'a key -> 'a -> 'a -> bool }
+  val equal : eq -> t -> t -> bool
   (** [equal p m m'] tests whether the maps [m] and [m'] are equal, that is
       contain equal keys and associate them with equal data.  [p] is the
       equality predicate used to compare the data associated with the keys. *)
