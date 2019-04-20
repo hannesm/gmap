@@ -29,8 +29,8 @@
 
 {[
 type _ key =
-  | A : int key
-  | B : string key
+  | I : int key
+  | S : string key
 
 module K = struct
   type 'a t = 'a key
@@ -38,8 +38,8 @@ module K = struct
   let compare : type a b. a t -> b t -> (a, b) Gmap.Order.t = fun t t' ->
     let open Gmap.Order in
     match t, t' with
-    | A, A -> Eq | A, _ -> Lt | _, A -> Gt
-    | B, B -> Eq
+    | I, I -> Eq | I, _ -> Lt | _, I -> Gt
+    | S, S -> Eq
 end
 
 module GM = Gmap.Make(K)
@@ -48,7 +48,7 @@ module GM = Gmap.Make(K)
     Using [GM] is done as follows:
 
 {[
-match GM.find A m with
+match GM.find I m with
 | Some x -> x * x
 | None -> 0
 ]}
@@ -228,4 +228,6 @@ module type S = sig
 end
 
 (** Functor for heterogenous maps whose keys are provided by [Key]. *)
-module Make : functor (Key : KEY) -> S with type 'a key = 'a Key.t
+module Make (Key : KEY) : sig
+  include S with type 'a key = 'a Key.t
+end

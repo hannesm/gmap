@@ -8,10 +8,13 @@ bug-reports: "https://github.com/hannesm/gmap/issues"
 depends: [
   "ocaml" {>= "4.04.2"}
   "dune" {build}
+  "alcotest" {with-test}
+  "fmt" {with-test}
 ]
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 dev-repo: "git+https://github.com/hannesm/gmap.git"
 synopsis: "Heterogenous maps over a GADT"
