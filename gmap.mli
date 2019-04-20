@@ -138,18 +138,10 @@ module type S = sig
       [f (find k m)], the binding of [k] is added, removed, or updated. *)
 
 
-  (** {2 Keys and Bindings} *)
-
-  type k = K : 'a key -> k
-  (** The monomorphic type of a key. *)
+  (** {2 Bindings} *)
 
   type b = B : 'a key * 'a -> b
   (** The type for a binding: a pair containing a key and its value. *)
-
-  (** {2 Key operations} *)
-
-  val comparek : k -> k -> int
-  (** [compare k k'] compares [k] with [k'], using the ordering. *)
 
   (** {2 Selection of bindings} *)
 

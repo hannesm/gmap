@@ -30,10 +30,7 @@ module type S = sig
   val remove : 'a key -> t -> t
   val update : 'a key -> ('a option -> 'a option) -> t -> t
 
-  type k = K : 'a key -> k
   type b = B : 'a key * 'a -> b
-
-  val comparek : k -> k -> int
 
   val min_binding : t -> b option
   val max_binding : t -> b option
@@ -62,12 +59,10 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   type k = K : 'a key -> k
   type b = B : 'a key * 'a -> b
 
-  let comparek (K a) (K b) = match Key.compare a b with
-    | Order.Lt -> -1 | Order.Eq -> 0 | Order.Gt -> 1
-
   module M = Map.Make(struct
       type t = k
-      let compare = comparek
+      let compare (K a) (K b) = match Key.compare a b with
+        | Order.Lt -> -1 | Order.Eq -> 0 | Order.Gt -> 1
     end)
 
   type t = b M.t
