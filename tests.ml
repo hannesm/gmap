@@ -28,7 +28,7 @@ module M = Gmap.Make(K)
 let m_check =
   let module M = struct
     type t = M.t
-    let pp ppf m = M.iter (fun (B (k, v)) -> pp_m ppf k v) m
+    let pp ppf m = M.iter (fun (M.B (k, v)) -> pp_m ppf k v) m
     let equal a b = M.equal { f = eq_m } a b
   end in
   (module M: Alcotest.TESTABLE with type t = M.t)
