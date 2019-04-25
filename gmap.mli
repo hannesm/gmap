@@ -201,11 +201,11 @@ module type S = sig
   (** [filter p m] returns the map with all the bindings in [m] that satisfy
       [p]. *)
 
-  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
+  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> ('a option, [ `Msg of string ]) result }
   (** The function type for the merge operation, using a record type for
       "first-class" semi-explicit polymorphism. *)
 
-  val merge : merger -> t -> t -> t
+  val merge : merger -> t -> t -> (t, [> `Msg of string ]) result
   (** [merge f m m'] computes a map whose keys is a subset of keys of [m] and
       [m'].  The presence of each such binding, and the corresponding value, is
       determined with the function [f]. *)

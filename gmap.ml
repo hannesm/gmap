@@ -48,8 +48,8 @@ module type S = sig
   val for_all : (b -> bool) -> t -> bool
   val exists : (b -> bool) -> t -> bool
   val filter : (b -> bool) -> t -> t
-  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
-  val merge : merger -> t -> t -> t
+  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> ('a option, [ `Msg of string ]) result }
+  val merge : merger -> t -> t -> (t, [> `Msg of string ]) result
   type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
   val union : unionee -> t -> t -> t
 end
@@ -120,43 +120,50 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   type mapper = { f : 'a. 'a key -> 'a -> 'a }
   let map f m = M.map (fun (B (k, v)) -> B (k, f.f k v)) m
 
-  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
+  type merger = { f : 'a. 'a key -> 'a option -> 'a option ->
+                    ('a option, [ `Msg of string ]) result }
+
+  exception Merge_error of string
+
   let merge f m m' =
-    M.merge (fun (K k) b b' ->
-        match b, b' with
-        | None, None ->
-          begin match f.f k None None with
-            | None -> None
-            | Some v -> Some (B (k, v))
-          end
-        | None, Some (B (k', v)) ->
-          (* see above comment about compare *)
-          begin match Key.compare k k' with
-            | Order.Eq ->
-              (match f.f k None (Some v) with
-               | None -> None
-               | Some v -> Some (B (k, v)))
-            | _ -> assert false
-          end
-        | Some (B (k', v)), None ->
-          (* see above comment about compare *)
-          begin match Key.compare k k' with
-            | Order.Eq ->
-              (match f.f k (Some v) None with
-               | None -> None
-               | Some v -> Some (B (k, v)))
-            | _ -> assert false
-          end
-        | Some (B (k', v)), Some (B (k'', v')) ->
-          (* see above comment about compare *)
-          begin match Key.compare k k', Key.compare k k'' with
-           | Order.Eq, Order.Eq ->
-             (match f.f k (Some v) (Some v') with
-              | None -> None
-              | Some v -> Some (B (k, v)))
-           | _ -> assert false
-          end)
-      m m'
+    try
+      Ok (M.merge (fun (K k) b b' ->
+          match b, b' with
+          (* Map.S.merge says "f None None = None" should hold *)
+          | None, None -> None
+          | None, Some (B (k', v)) ->
+            (* see above comment about compare *)
+            begin match Key.compare k k' with
+              | Order.Eq ->
+                (match f.f k None (Some v) with
+                 | Error (`Msg m) -> raise (Merge_error m)
+                 | Ok None -> None
+                 | Ok (Some v) -> Some (B (k, v)))
+              | _ -> assert false
+            end
+          | Some (B (k', v)), None ->
+            (* see above comment about compare *)
+            begin match Key.compare k k' with
+              | Order.Eq ->
+                (match f.f k (Some v) None with
+                 | Error (`Msg m) -> raise (Merge_error m)
+                 | Ok None -> None
+                 | Ok (Some v) -> Some (B (k, v)))
+              | _ -> assert false
+            end
+          | Some (B (k', v)), Some (B (k'', v')) ->
+            (* see above comment about compare *)
+            begin match Key.compare k k', Key.compare k k'' with
+              | Order.Eq, Order.Eq ->
+                (match f.f k (Some v) (Some v') with
+                 | Error (`Msg m) -> raise (Merge_error m)
+                 | Ok None -> None
+                 | Ok (Some v) -> Some (B (k, v)))
+              | _ -> assert false
+            end)
+        m m')
+    with
+      Merge_error m -> Error (`Msg m)
 
   type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
   let union f m m' =
