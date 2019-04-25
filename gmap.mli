@@ -208,7 +208,9 @@ module type S = sig
   val merge : merger -> t -> t -> (t, [> `Msg of string ]) result
   (** [merge f m m'] computes a map whose keys is a subset of keys of [m] and
       [m'].  The presence of each such binding, and the corresponding value, is
-      determined with the function [f]. *)
+      determined with the function [f]. [f None None] is never called, it
+      directly returns [None]. If [f] results in an [error], this is the return
+      [value] of merge. *)
 
   type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
   (** The function type for the union operation, using a record type for
