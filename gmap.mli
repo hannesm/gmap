@@ -201,16 +201,24 @@ module type S = sig
   (** [filter p m] returns the map with all the bindings in [m] that satisfy
       [p]. *)
 
-  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> ('a option, [ `Msg of string ]) result }
+  type fold2 = { f : 'a 'b. 'a key -> 'a option -> 'a option -> 'b -> 'b }
+  (** The function type for the fold2 operation, using a record type for
+      "first-class" semi-explicit polymorphism. *)
+
+  val fold2 : fold2 -> t -> t -> 'a -> 'a
+  (** [fold2 f m m' acc] iterates over [m] and [m'], and calls [f] for each
+      binding in [m] or [m']. It uses [Map.merge] for the folding, but
+      ignores the result. *)
+
+  type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
   (** The function type for the merge operation, using a record type for
       "first-class" semi-explicit polymorphism. *)
 
-  val merge : merger -> t -> t -> (t, [> `Msg of string ]) result
+  val merge : merger -> t -> t -> t
   (** [merge f m m'] computes a map whose keys is a subset of keys of [m] and
       [m'].  The presence of each such binding, and the corresponding value, is
       determined with the function [f]. [f None None] is never called, it
-      directly returns [None]. If [f] results in an [error], this is the return
-      [value] of merge. *)
+      directly returns [None]. *)
 
   type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
   (** The function type for the union operation, using a record type for
