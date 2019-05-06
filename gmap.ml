@@ -125,23 +125,23 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
 
   let merge f m m' =
+    let callf : type x y. x key -> x option -> y key -> y option -> b option =
+      fun k v k' v' ->
+        (* see above comment in get about this useless Key.compare *)
+        match Key.compare k k' with
+        | Order.Eq ->
+          (match f.f k v v' with
+           | None -> None
+           | Some v'' -> Some (B (k, v'')))
+        | _ -> assert false
+    in
     M.merge (fun (K key) b b' ->
-        let go : type x y. x key -> x option -> y key -> y option -> b option =
-          fun k v k' v' ->
-            (* see above comment in get about this useless Key.compare *)
-            match Key.compare k k' with
-            | Order.Eq ->
-              (match f.f k v v' with
-               | None -> None
-               | Some v'' -> Some (B (k, v'')))
-            | _ -> assert false
-        in
         match b, b' with
         (* Map.merge never calls f None None, just for the types *)
         | None, None -> None
-        | None, Some B (k', v') -> go key None k' (Some v')
-        | Some B (k, v), None -> go k (Some v) key None
-        | Some B (k, v), Some B (k', v') -> go k (Some v) k' (Some v')
+        | None, Some B (k', v') -> callf key None k' (Some v')
+        | Some B (k, v), None -> callf k (Some v) key None
+        | Some B (k, v), Some B (k', v') -> callf k (Some v) k' (Some v')
       )
       m m'
 
