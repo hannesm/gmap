@@ -125,37 +125,24 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
 
   let merge f m m' =
-    M.merge (fun (K k) b b' ->
+    M.merge (fun (K key) b b' ->
+        let go : type x y. x key -> x option -> y key -> y option -> b option =
+          fun k v k' v' ->
+            (* see above comment in get about this useless Key.compare *)
+            match Key.compare k k' with
+            | Order.Eq ->
+              (match f.f k v v' with
+               | None -> None
+               | Some v'' -> Some (B (k, v'')))
+            | _ -> assert false
+        in
         match b, b' with
-        (* Map.S.merge says "f None None = None" should hold *)
+        (* Map.merge never calls f None None, just for the types *)
         | None, None -> None
-        | None, Some (B (k', v)) ->
-          (* see above comment about compare *)
-          begin match Key.compare k k' with
-            | Order.Eq ->
-              (match f.f k None (Some v) with
-               | None -> None
-               | Some v -> Some (B (k, v)))
-            | _ -> assert false
-          end
-        | Some (B (k', v)), None ->
-          (* see above comment about compare *)
-          begin match Key.compare k k' with
-            | Order.Eq ->
-              (match f.f k (Some v) None with
-               | None -> None
-               | Some v -> Some (B (k, v)))
-            | _ -> assert false
-          end
-        | Some (B (k', v)), Some (B (k'', v')) ->
-          (* see above comment about compare *)
-          begin match Key.compare k k', Key.compare k k'' with
-            | Order.Eq, Order.Eq ->
-              (match f.f k (Some v) (Some v') with
-               | None -> None
-               | Some v -> Some (B (k, v)))
-            | _ -> assert false
-          end)
+        | None, Some B (k', v') -> go key None k' (Some v')
+        | Some B (k, v), None -> go k (Some v) key None
+        | Some B (k, v), Some B (k', v') -> go k (Some v) k' (Some v')
+      )
       m m'
 
   type fold2 = { f : 'a 'b. 'a key -> 'a option -> 'a option -> 'b -> 'b }
