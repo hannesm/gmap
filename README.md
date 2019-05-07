@@ -36,7 +36,7 @@ let () =
 ```
 
 This is already an exhaustive pattern match: there is no need for another case
-(for the constructor `B`) since the type system knows that looking for `A` will
+(for the constructor `S`) since the type system knows that looking for `I` will
 result in an `int`.
 
 Motivation came from parsing of protocols which usually specify optional values
