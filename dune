@@ -7,3 +7,8 @@
   (name tests)
   (modules tests)
   (libraries alcotest fmt gmap))
+
+(executable
+  (name bench)
+  (modules bench)
+  (libraries mtime.clock.os ocplib-endian gmap fmt rresult))
