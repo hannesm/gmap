@@ -148,6 +148,41 @@ let union () =
     (M.singleton I 100)
     (M.union { f = no_wins } m (M.singleton S "bar"))
 
+let compare_length_with () =
+  let m0 = M.empty in
+  let m1 = M.add I 0 m0 in
+  let m2 = M.add S "foo" m1 in
+  Alcotest.check Alcotest.int "(empty) 0 = 0"
+    0 (M.compare_length_with m0 0);
+  Alcotest.check Alcotest.bool "(empty) 1 < 0"
+    true (M.compare_length_with m0 1 < 0);
+  Alcotest.check Alcotest.bool "(empty) 1 < 0"
+    true (M.compare_length_with m0 1 < 0);
+  Alcotest.check Alcotest.int "(singleton) 1 = 0"
+    0 (M.compare_length_with m1 1);
+  Alcotest.check Alcotest.bool "(singleton) 0 > 0"
+    true (M.compare_length_with m1 0 > 0);
+  Alcotest.check Alcotest.bool "(singleton) 2 < 0"
+    true (M.compare_length_with m1 2 < 0);
+  Alcotest.check Alcotest.bool "(m1) 500 < 0"
+    true (M.compare_length_with m1 500 < 0);
+  Alcotest.check Alcotest.bool "(m1) 0 > 0"
+    true (M.compare_length_with m1 0 > 0 );
+  Alcotest.check Alcotest.int "(m1) 1 = 0"
+    0 (M.compare_length_with m1 1);
+  Alcotest.check Alcotest.bool "(m1) 2 < 0"
+    true (M.compare_length_with m1 2 < 0);
+  Alcotest.check Alcotest.bool "(m2) 0 > 0"
+    true (M.compare_length_with m2 0 > 0);
+  Alcotest.check Alcotest.bool "(m2) 500 < 0"
+    true (M.compare_length_with m2 500 < 0);
+  Alcotest.check Alcotest.bool "(m2) 1 > 0"
+    true (M.compare_length_with m2 1 > 0 );
+  Alcotest.check Alcotest.int "(m2) 2 = 0"
+    0 (M.compare_length_with m2 2);
+  Alcotest.check Alcotest.bool "(m2) 3 < 0"
+    true (M.compare_length_with m2 3 < 0)
+
 let tests = [
   "empty gmap", `Quick, empty ;
   "basic gmap", `Quick, basic ;
@@ -155,6 +190,7 @@ let tests = [
   "predicates", `Quick, preds ;
   "map", `Quick, map ;
   "union", `Quick, union ;
+  "compare_length_with", `Quick, compare_length_with;
 ]
 
 let () = Alcotest.run "gmap tests" [ "gmap suite", tests ]

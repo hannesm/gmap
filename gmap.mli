@@ -103,6 +103,20 @@ module type S = sig
   val cardinal : t -> int
   (** [cardinal m] returns the number of bindings of the map [m]. *)
 
+  val compare_length_with : t -> int -> int
+  (** [compare_length_with t num] is equivalent to
+      [compare (cardinal t) num], but returns early when [num < cardinal t]
+      to avoid iterating over the entire map.
+      The upper algorithmic performance bound is thus
+      [O( min(num+1, cardinal) )] instead of [O(cardinal)].
+      That is useful when you frequently need to compare the
+      cardinality of a potentially large map with a smaller number.
+      It is [0] if the two numbers are equal;
+      negative if [cardinal t < num];
+      positive if [cardinal t > num].
+      See {!List.compare_length_with}.
+  *)
+
   (** {2 Lookup operations} *)
 
   val mem : 'a key -> t -> bool
