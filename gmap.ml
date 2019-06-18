@@ -48,8 +48,8 @@ module type S = sig
   val for_all : (b -> bool) -> t -> bool
   val exists : (b -> bool) -> t -> bool
   val filter : (b -> bool) -> t -> t
-  type fold2 = { f : 'a 'b. 'a key -> 'a option -> 'a option -> 'b -> 'b }
-  val fold2 : fold2 -> t -> t -> 'a -> 'a
+  type 'a fold2 = { f : 'b. 'b key -> 'b option -> 'b option -> 'a -> 'a }
+  val fold2 : 'a fold2 -> t -> t -> 'a -> 'a
   type merger = { f : 'a. 'a key -> 'a option -> 'a option -> 'a option }
   val merge : merger -> t -> t -> t
   type unionee = { f : 'a. 'a key -> 'a -> 'a -> 'a option }
@@ -145,7 +145,7 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
       )
       m m'
 
-  type fold2 = { f : 'a 'b. 'a key -> 'a option -> 'a option -> 'b -> 'b }
+  type 'a fold2 = { f : 'b. 'b key -> 'b option -> 'b option -> 'a -> 'a }
 
   let fold2 f m m' acc =
     let local = ref acc in

@@ -201,11 +201,11 @@ module type S = sig
   (** [filter p m] returns the map with all the bindings in [m] that satisfy
       [p]. *)
 
-  type fold2 = { f : 'a 'b. 'a key -> 'a option -> 'a option -> 'b -> 'b }
+  type 'a fold2 = { f : 'b. 'b key -> 'b option -> 'b option -> 'a -> 'a }
   (** The function type for the fold2 operation, using a record type for
       "first-class" semi-explicit polymorphism. *)
 
-  val fold2 : fold2 -> t -> t -> 'a -> 'a
+  val fold2 : 'a fold2 -> t -> t -> 'a -> 'a
   (** [fold2 f m m' acc] iterates over [m] and [m'], and calls [f] for each
       binding in [m] or [m']. It uses [Map.merge] for the folding, but
       ignores the result. *)
