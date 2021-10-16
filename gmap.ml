@@ -22,6 +22,7 @@ module type S = sig
   val singleton : 'a key -> 'a -> t
   val is_empty : t -> bool
   val cardinal : t -> int
+  val compare_length_with : t -> int -> int
   val mem : 'a key -> t -> bool
   val find : 'a key -> t -> 'a option
   val get : 'a key -> t -> 'a
@@ -111,6 +112,11 @@ module Make (Key : KEY) : S with type 'a key = 'a Key.t = struct
   let bindings m = snd (List.split (M.bindings m))
 
   let cardinal m = M.cardinal m
+
+  let compare_length_with t num =
+    let seen = ref 0 in
+    let _ = M.find_first_opt (fun _ -> incr seen; !seen > num) t in
+    !seen - num
 
   let for_all p m = M.for_all (fun _ b -> p b) m
   let exists p m = M.exists (fun _ b -> p b) m
